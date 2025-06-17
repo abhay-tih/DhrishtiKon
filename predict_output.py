@@ -13,6 +13,7 @@ import pymupdf
 import numpy as np
 from time import time
 
+
 pipe = None
 layout_predictor = None
 
@@ -172,7 +173,7 @@ def get_page_number(block_bboxes):
     return max_page
 
 
-def predict_output(document_path, question, pipe, layout_predictor, model, model_type, document_type="image"):
+def predict_output(document_path, question, pipe, layout_predictor, model, model_type, document_type="image", return_only_answer=False):
 
     predicted_answer = None
     block_box_predictions = None
@@ -206,7 +207,8 @@ def predict_output(document_path, question, pipe, layout_predictor, model, model
     print(f"Done with LLM in {llm_time - curr_time} seconds")
 
     print("LLM Answer: ", predicted_answer)
-    
+    if return_only_answer == True:
+        return predicted_answer, None, None, None, None, None
 
     total_algo_time = time()
 
@@ -257,6 +259,38 @@ def predict_output(document_path, question, pipe, layout_predictor, model, model
     
 
     return predicted_answer, block_box_predictions, line_box_predictions, word_box_predictions, point_box_predictions, current_page
+
+
+def predict_multiple_output(document_path, questions, pipe, layout_predictor, model, model_type, document_type="image"):
+
+    curr_time = time()
+    line_predictions = get_line_predictions(document_path, model, document_type)
+    line_time = time()
+    print(f"Done with line predictions in {line_time - curr_time} seconds")
+    curr_time = time()
+    block_predictions = get_block_predictions(document_path, layout_predictor, model, document_type)
+    block_time = time()
+    print(f"Done with block predictions in {block_time - line_time} seconds")
+
+    responses = {}
+    curr_time = time()
+    # print(questions)
+    for question_tup in questions:
+        if model_type == "MGVG" or document_type=="pdf":
+            processed_text_for_llm = get_processed_text_for_llm(block_predictions)
+            print("Processed Text for LLM: ", processed_text_for_llm)
+            predicted_answer = generate_llm_answer(question_tup[0], processed_text_for_llm, pipe)
+            responses[question_tup[1]] = predicted_answer
+
+        elif model_type == "IndoDocs":
+            predicted_answer = generate_via_inhouse_model_answer(question_tup[0], document_path)
+            responses[question_tup[1]] = predicted_answer
+        
+
+    llm_time = time()
+    print(f"Done with LLM in {llm_time - curr_time} seconds")
+    
+    return responses
 
 
 def calculate_midpoint_of_bboxes(bboxes):

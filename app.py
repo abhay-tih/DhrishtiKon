@@ -16,6 +16,8 @@ st.set_page_config(
 import streamlit as st
 import time
 
+from huggingface_hub import login
+login("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")
 # Define your valid credentials
 VALID_USERS = {
     "iitb": "iitb123",
