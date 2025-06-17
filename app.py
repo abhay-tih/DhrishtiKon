@@ -17,7 +17,7 @@ import streamlit as st
 import time
 
 from huggingface_hub import login
-login("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")
+login("HUGGING_FACE_TOKEN")
 # Define your valid credentials
 VALID_USERS = {
     "iitb": "iitb123",
